@@ -1,8 +1,11 @@
 venv/
+.venv/
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 .env
 *.egg-info/
 dist/
 build/
+assets/fonts/*.pil
+assets/fonts/*.pbm

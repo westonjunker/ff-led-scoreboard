@@ -1,0 +1,15 @@
+sleeper:
+  username: "your_sleeper_username"
+  season: "2025"
+
+display:
+  rotation_seconds: 10
+  brightness: 60
+  highlight_color: [0, 255, 100]
+  dim_color: [180, 180, 180]
+
+panels:
+  rows: 32
+  cols: 64
+  chain_length: 1
+  parallel: 2  # stacked = parallel chains

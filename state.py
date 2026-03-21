@@ -4,11 +4,12 @@ from sleeper_client import SleeperOfflineError
 
 
 class LeagueState:
-    def __init__(self, league_data, roster_id, matchups, week):
+    def __init__(self, league_data, roster_id, matchups, rosters, week):
         self.league_id = league_data["league_id"]
         self.name = league_data["name"]
         self.roster_id = roster_id
         self.matchups = matchups
+        self.rosters = rosters
         self.week = week
 
     @property
@@ -29,6 +30,15 @@ class LeagueState:
                 return m
         return None
 
+    @property
+    def standings(self):
+        """Rosters sorted by wins desc, then points-for desc."""
+        def sort_key(r):
+            s = r.get("settings") or {}
+            fpts = s.get("fpts", 0) + s.get("fpts_decimal", 0) / 100
+            return (s.get("wins", 0), fpts)
+        return sorted(self.rosters, key=sort_key, reverse=True)
+
 
 class State:
     def __init__(self, client, config):
@@ -44,10 +54,9 @@ class State:
             self.current_week = nfl_state.get("week", 1)
             self.offline = False
             self.leagues = [
-                LeagueState(league_data, roster_id, matchups, self.current_week)
-                for league_data, roster_id, matchups in resolved
+                LeagueState(league_data, roster_id, matchups, rosters, self.current_week)
+                for league_data, roster_id, matchups, rosters in resolved
             ]
         except SleeperOfflineError as e:
             print(f"[state] Offline: {e}")
             self.offline = True
-            # Retain stale league data so the display doesn't go blank

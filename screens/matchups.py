@@ -1,6 +1,7 @@
 """Matchup screen — my score vs opponent."""
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
+import fonts
 
 W, H = 32, 32
 
@@ -14,16 +15,15 @@ class MatchupScreen:
     def render(self) -> Image.Image:
         img = Image.new("RGB", (W, H), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
+        f = fonts.font_5x8()
 
         my = self.league.my_matchup
         opp = self.league.opponent_matchup
 
-        my_pts = f"{my['points']:.1f}" if my and my.get("points") is not None else "--"
+        my_pts  = f"{my['points']:.1f}"  if my  and my.get("points")  is not None else "--"
         opp_pts = f"{opp['points']:.1f}" if opp and opp.get("points") is not None else "--"
 
-        # ▶ marker next to my score
-        draw.text((2, 6),  f"\u25b6{my_pts}", fill=self.highlight, font=font)
-        draw.text((2, 18), f" {opp_pts}", fill=self.dim, font=font)
+        draw.text((1, 7),  f">{my_pts}",  fill=self.highlight, font=f)
+        draw.text((1, 18), f" {opp_pts}", fill=self.dim,       font=f)
 
         return img

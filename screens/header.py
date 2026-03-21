@@ -1,6 +1,7 @@
 """Header screen — league name and current week."""
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
+import fonts
 
 W, H = 32, 32
 
@@ -14,11 +15,11 @@ class HeaderScreen:
     def render(self) -> Image.Image:
         img = Image.new("RGB", (W, H), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
+        f = fonts.font_5x8()
 
-        # Truncate league name to ~5 chars to fit 32px width
-        name = self.league.name[:5]
-        draw.text((2, 8), name, fill=self.highlight, font=font)
-        draw.text((2, 20), f"Wk{self.league.week}", fill=self.dim, font=font)
+        # Truncate to 6 chars to fit 32px width at 5px per char
+        name = self.league.name[:6]
+        draw.text((1, 7),  name, fill=self.highlight, font=f)
+        draw.text((1, 18), f"Wk{self.league.week}", fill=self.dim, font=f)
 
         return img

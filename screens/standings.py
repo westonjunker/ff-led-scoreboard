@@ -1,6 +1,7 @@
-"""Standings screen — top entries by points scored."""
+"""Standings screen — win/loss records sorted by wins then points-for."""
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
+import fonts
 
 W, H = 32, 32
 
@@ -14,20 +15,17 @@ class StandingsScreen:
     def render(self) -> Image.Image:
         img = Image.new("RGB", (W, H), (0, 0, 0))
         draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()
-
-        sorted_matchups = sorted(
-            self.league.matchups,
-            key=lambda m: m.get("points") or 0,
-            reverse=True,
-        )
+        f = fonts.font_4x6()
 
         y = 2
-        for i, m in enumerate(sorted_matchups[:3]):
-            pts = f"{m['points']:.0f}" if m.get("points") is not None else "--"
-            marker = "\u25b6" if m["roster_id"] == self.league.roster_id else " "
-            color = self.highlight if m["roster_id"] == self.league.roster_id else self.dim
-            draw.text((2, y), f"{marker}{i+1}.{pts}", fill=color, font=font)
-            y += 10
+        for roster in self.league.standings[:4]:
+            s = roster.get("settings") or {}
+            wins   = s.get("wins", 0)
+            losses = s.get("losses", 0)
+            is_me  = roster["roster_id"] == self.league.roster_id
+            marker = ">" if is_me else " "
+            color  = self.highlight if is_me else self.dim
+            draw.text((1, y), f"{marker}{wins}-{losses}", fill=color, font=f)
+            y += 7  # 6px glyph + 1px gap
 
         return img

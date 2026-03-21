@@ -16,8 +16,8 @@ class SleeperClient:
         self.username = config["sleeper"]["username"]
         self.season = config["sleeper"]["season"]
         self._user_id = None
-        # Cache roster_id per league so we don't re-fetch rosters every cycle
         self._roster_id_cache = {}
+        self._rosters_cache = {}  # raw rosters per league, reused for standings
 
     # ------------------------------------------------------------------
     # Core HTTP
@@ -67,8 +67,10 @@ class SleeperClient:
         return leagues
 
     def get_rosters(self, league_id):
-        """Step 3 (helper): fetch all rosters for a league."""
-        return self._get(f"/league/{league_id}/rosters") or []
+        """Step 3 (helper): fetch all rosters for a league (cached)."""
+        if league_id not in self._rosters_cache:
+            self._rosters_cache[league_id] = self._get(f"/league/{league_id}/rosters") or []
+        return self._rosters_cache[league_id]
 
     def get_roster_id(self, league_id):
         """Step 3: find this user's roster_id within a league (cached)."""
@@ -114,6 +116,7 @@ class SleeperClient:
             league_id = league_data["league_id"]
             roster_id = self.get_roster_id(league_id)
             matchups = self.get_matchups(league_id, week)
-            resolved.append((league_data, roster_id, matchups))
+            rosters = self.get_rosters(league_id)  # already cached from get_roster_id
+            resolved.append((league_data, roster_id, matchups, rosters))
 
         return nfl_state, resolved

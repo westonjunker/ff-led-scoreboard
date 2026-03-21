@@ -86,16 +86,23 @@ def main():
             continue
 
         for ScreenClass, duration in SCREEN_SEQUENCE:
-            images = []
+            # Collect frames per league — render() returns Image or list of Images
+            all_frames = []
             for league in state.leagues[:4]:
-                screen = ScreenClass(league, config)
-                images.append(screen.render())
-            # Pad to 4 if fewer than 4 leagues
-            while len(images) < 4:
-                images.append(Image.new("RGB", (32, 32), (0, 0, 0)))
+                result = ScreenClass(league, config).render()
+                all_frames.append(result if isinstance(result, list) else [result])
 
-            matrix.SetImage(compose(images))
-            time.sleep(duration)
+            # Pad to 4 quadrants
+            while len(all_frames) < 4:
+                all_frames.append([Image.new("RGB", (32, 32), (0, 0, 0))])
+
+            max_pages = max(len(f) for f in all_frames)
+            page_duration = duration / max_pages
+
+            for page in range(max_pages):
+                images = [f[min(page, len(f) - 1)] for f in all_frames]
+                matrix.SetImage(compose(images))
+                time.sleep(page_duration)
 
 
 if __name__ == "__main__":

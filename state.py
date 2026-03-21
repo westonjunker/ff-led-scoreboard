@@ -46,12 +46,14 @@ class State:
         self.config = config
         self.leagues = []
         self.current_week = None
+        self.season_has_scores = False
         self.offline = False
 
     def refresh(self):
         try:
             nfl_state, resolved = self.client.resolve_all()
-            self.current_week = nfl_state.get("week", 1)
+            self.current_week = nfl_state.get("week", 0)
+            self.season_has_scores = nfl_state.get("season_has_scores", False)
             self.offline = False
             self.leagues = [
                 LeagueState(league_data, roster_id, matchups, rosters, self.current_week)

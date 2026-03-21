@@ -14,10 +14,15 @@ from screens.standings import StandingsScreen
 # Quadrant positions (x, y) for up to 4 leagues
 QUADRANT_POSITIONS = [(0, 0), (32, 0), (0, 32), (32, 32)]
 
-SCREEN_SEQUENCE = [
-    (HeaderScreen,   2),
-    (MatchupScreen,  6),
+SCREEN_SEQUENCE_LIVE = [
+    (HeaderScreen,    2),
+    (MatchupScreen,   6),
     (StandingsScreen, 5),
+]
+
+SCREEN_SEQUENCE_OFFSEASON = [
+    (HeaderScreen,    2),
+    (StandingsScreen, 8),
 ]
 
 
@@ -85,7 +90,9 @@ def main():
             time.sleep(10)
             continue
 
-        for ScreenClass, duration in SCREEN_SEQUENCE:
+        sequence = SCREEN_SEQUENCE_LIVE if state.season_has_scores else SCREEN_SEQUENCE_OFFSEASON
+
+        for ScreenClass, duration in sequence:
             # Collect frames per league — render() returns Image or list of Images
             all_frames = []
             for league in state.leagues[:4]:

@@ -13,4 +13,4 @@ panels:
   cols: 64
   chain_length: 2   # two panels daisy-chained
   parallel: 1
-  pixel_mapper: "V-mapper"  # folds 128x32 chain into 64x64 vertical stack
+  pixel_mapper: "V-mapper;Rotate:180"  # folds chain into 64x64, rotated for mounted orientation

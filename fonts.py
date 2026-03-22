@@ -25,7 +25,7 @@ def font_5x8():
     """5×8 — good for scores and labels in a 32px-wide quadrant."""
     try:
         return _load_bdf("5x8")
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError, OSError):
         return ImageFont.load_default()
 
 
@@ -33,5 +33,5 @@ def font_4x6():
     """4×6 — compact, fits 4+ rows in a 32px-tall quadrant."""
     try:
         return _load_bdf("4x6")
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError, OSError):
         return ImageFont.load_default()

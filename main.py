@@ -43,6 +43,8 @@ def make_matrix(config):
         options.parallel = p["parallel"]
         options.brightness = config["display"]["brightness"]
         options.hardware_mapping = "adafruit-hat"
+        if p.get("pixel_mapper"):
+            options.pixel_mapper_config = p["pixel_mapper"]
         return RGBMatrix(options=options)
     else:
         from mock_matrix import MockMatrix

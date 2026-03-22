@@ -10,6 +10,7 @@ from state import State
 from screens.header import HeaderScreen
 from screens.matchups import MatchupScreen
 from screens.standings import StandingsScreen
+from screens.offseason import OffseasonScreen
 
 # Quadrant positions (x, y) for up to 4 leagues
 QUADRANT_POSITIONS = [(0, 0), (32, 0), (0, 32), (32, 32)]
@@ -20,10 +21,8 @@ SCREEN_SEQUENCE_LIVE = [
     (StandingsScreen, 5),
 ]
 
-SCREEN_SEQUENCE_OFFSEASON = [
-    (HeaderScreen,    2),
-    (StandingsScreen, 8),
-]
+OFFSEASON_FPS        = 20          # frames per second for scroll animation
+OFFSEASON_REFRESH_S  = 300         # re-poll Sleeper every 5 minutes
 
 
 def load_config(path="config.yaml"):
@@ -78,6 +77,64 @@ def offline_frame():
     return img
 
 
+def _build_offseason_screens(state, config):
+    screens = [OffseasonScreen(l, config) for l in state.leagues[:4]]
+    while len(screens) < 4:
+        screens.append(None)
+    return screens
+
+
+def run_offseason(matrix, state, config):
+    """Scrolling offseason animation. Returns when live season is detected."""
+    print("[main] Offseason mode — starting scroll animation")
+    screens = _build_offseason_screens(state, config)
+    last_refresh = time.time()
+    frame_delay = 1.0 / OFFSEASON_FPS
+
+    while True:
+        frames = [
+            s.render() if s else Image.new("RGB", (32, 32), (0, 0, 0))
+            for s in screens
+        ]
+        matrix.SetImage(compose(frames))
+        for s in screens:
+            if s:
+                s.tick()
+        time.sleep(frame_delay)
+
+        # Periodically refresh — break out if season has started
+        if time.time() - last_refresh > OFFSEASON_REFRESH_S:
+            try:
+                state.refresh()
+            except SleeperOfflineError:
+                pass
+            last_refresh = time.time()
+            if state.season_has_scores:
+                print("[main] Season started — switching to live mode")
+                return
+            screens = _build_offseason_screens(state, config)
+
+
+def run_live(matrix, state, config):
+    """One full rotation through all live screens, then returns."""
+    for ScreenClass, duration in SCREEN_SEQUENCE_LIVE:
+        all_frames = []
+        for league in state.leagues[:4]:
+            result = ScreenClass(league, config).render()
+            all_frames.append(result if isinstance(result, list) else [result])
+
+        while len(all_frames) < 4:
+            all_frames.append([Image.new("RGB", (32, 32), (0, 0, 0))])
+
+        max_pages = max(len(f) for f in all_frames)
+        page_duration = duration / max_pages
+
+        for page in range(max_pages):
+            images = [f[min(page, len(f) - 1)] for f in all_frames]
+            matrix.SetImage(compose(images))
+            time.sleep(page_duration)
+
+
 def main():
     config = load_config()
     matrix = make_matrix(config)
@@ -91,31 +148,14 @@ def main():
             print(f"[main] Offline: {e}")
 
         if state.offline or not state.leagues:
-            canvas = compose([offline_frame()] * 4)
-            matrix.SetImage(canvas)
+            matrix.SetImage(compose([offline_frame()] * 4))
             time.sleep(10)
             continue
 
-        sequence = SCREEN_SEQUENCE_LIVE if state.season_has_scores else SCREEN_SEQUENCE_OFFSEASON
-
-        for ScreenClass, duration in sequence:
-            # Collect frames per league — render() returns Image or list of Images
-            all_frames = []
-            for league in state.leagues[:4]:
-                result = ScreenClass(league, config).render()
-                all_frames.append(result if isinstance(result, list) else [result])
-
-            # Pad to 4 quadrants
-            while len(all_frames) < 4:
-                all_frames.append([Image.new("RGB", (32, 32), (0, 0, 0))])
-
-            max_pages = max(len(f) for f in all_frames)
-            page_duration = duration / max_pages
-
-            for page in range(max_pages):
-                images = [f[min(page, len(f) - 1)] for f in all_frames]
-                matrix.SetImage(compose(images))
-                time.sleep(page_duration)
+        if not state.season_has_scores:
+            run_offseason(matrix, state, config)
+        else:
+            run_live(matrix, state, config)
 
 
 if __name__ == "__main__":

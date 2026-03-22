@@ -9,18 +9,26 @@ SCROLL_SPEED = 1          # px per tick
 SCROLL_PAUSE_FRAMES = 60  # blank frames between scroll cycles (~3s at 20fps)
 
 # ── Layout (32px tall) ────────────────────────────────────────────────────────
-# y  0-9   (10px) : scrolling league name strip  — 5x8 font, 1px top pad
-# y  10    ( 1px) : divider
-# y  11-20 (10px) : rank ordinal centered        — 5x8 font, 1px top pad
-# y  21    ( 1px) : divider
-# y  22-31 (10px) : countdown centered           — 5x8 font, 1px top pad
+# The 5x8 BDF font has ~2px of internal top margin before visible pixels.
+# All text y-values are set 2px ABOVE the zone boundary so visible pixels
+# land right at the boundary (1px gap max).
+#
+# y  0-10  (11px) : scrolling league name strip
+# y  11    ( 1px) : divider
+# y  12-21 (10px) : rank ordinal
+# y  22    ( 1px) : divider
+# y  23-31 ( 9px) : countdown
 # ─────────────────────────────────────────────────────────────────────────────
 
-NAME_STRIP_H  = 10
-RANK_Y        = 12   # 1px pad inside the 10px zone starting at y=11
-DIVIDER1_Y    = 10
-DIVIDER2_Y    = 21
-COUNTDOWN_Y   = 23   # 1px pad inside the 10px zone starting at y=22
+NAME_STRIP_H = 11
+DIVIDER1_Y   = 11
+DIVIDER2_Y   = 22
+
+# Text drawn 2px BEFORE its visible zone so the font's internal
+# 2px top margin puts visible pixels right at the zone start.
+NAME_TEXT_Y      = -1   # visible at y≈1  inside the 11px strip
+RANK_TEXT_Y      = 10   # visible at y≈12, zone starts y=12
+COUNTDOWN_TEXT_Y = 21   # visible at y≈23, zone starts y=23
 
 
 def _ordinal(n):
@@ -40,7 +48,7 @@ def _text_w(draw, text, font):
     try:
         return int(draw.textlength(text, font=font))
     except Exception:
-        return len(text) * 5   # 5x8 fallback estimate
+        return len(text) * 5
 
 
 class OffseasonScreen:
@@ -55,11 +63,9 @@ class OffseasonScreen:
         self._fn = fonts.font_5x8()
         self._hl = tuple(config["display"]["highlight_color"])
 
-        # Measure league name width for scroll range
         name = league.name or "League"
         tmp = Image.new("RGB", (500, 12))
         self._name_w = _text_w(ImageDraw.Draw(tmp), name, self._fn)
-        # scroll: 0 = name just offscreen right; wraps after full pass + pause
         self._scroll_range = self.W + self._name_w + SCROLL_PAUSE_FRAMES
         self._scroll_offset = 0
 
@@ -80,32 +86,32 @@ class OffseasonScreen:
         draw = ImageDraw.Draw(img)
         fn = self._fn
 
-        # ── Scrolling league name (clipped to top NAME_STRIP_H px) ────────
+        # ── Scrolling league name (clipped to NAME_STRIP_H px) ────────────
         name_strip = Image.new("RGB", (self.W, NAME_STRIP_H), (0, 0, 0))
         strip_draw = ImageDraw.Draw(name_strip)
         strip_draw.text(
-            (self.W - self._scroll_offset, 1),
+            (self.W - self._scroll_offset, NAME_TEXT_Y),
             self.league.name or "League",
             font=fn,
             fill=(0, 200, 255),
         )
         img.paste(name_strip, (0, 0))
 
-        # ── Dividers ──────────────────────────────────────────────────────
-        draw.line([(0, DIVIDER1_Y), (31, DIVIDER1_Y)], fill=(45, 45, 45))
-        draw.line([(0, DIVIDER2_Y), (31, DIVIDER2_Y)], fill=(45, 45, 45))
-
-        # ── Rank ordinal (centered, no "place") ───────────────────────────
+        # ── Rank ordinal ──────────────────────────────────────────────────
         rank = self._my_rank()
         rank_str = _ordinal(rank) if rank else "?"
         rw = _text_w(draw, rank_str, fn)
-        draw.text(((self.W - rw) // 2, RANK_Y), rank_str, font=fn, fill=self._hl)
+        draw.text(((self.W - rw) // 2, RANK_TEXT_Y), rank_str, font=fn, fill=self._hl)
 
         # ── Countdown ─────────────────────────────────────────────────────
         days = _days_until_season()
         cd_str = f"{days}d" if days > 0 else "Soon!"
         cw = _text_w(draw, cd_str, fn)
-        draw.text(((self.W - cw) // 2, COUNTDOWN_Y), cd_str,
+        draw.text(((self.W - cw) // 2, COUNTDOWN_TEXT_Y), cd_str,
                   font=fn, fill=(255, 200, 0))
+
+        # ── Dividers drawn last so they always show clean on top ──────────
+        draw.line([(0, DIVIDER1_Y), (31, DIVIDER1_Y)], fill=(45, 45, 45))
+        draw.line([(0, DIVIDER2_Y), (31, DIVIDER2_Y)], fill=(45, 45, 45))
 
         return img

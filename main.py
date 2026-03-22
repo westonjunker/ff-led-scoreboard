@@ -33,7 +33,7 @@ def load_config(path="config.yaml"):
 
 def make_matrix(config):
     p = config["panels"]
-    is_pi = platform.system() == "Linux" and platform.machine().startswith("arm")
+    is_pi = platform.system() == "Linux" and platform.machine().startswith(("arm", "aarch"))
     if is_pi:
         from rgbmatrix import RGBMatrix, RGBMatrixOptions
         options = RGBMatrixOptions()

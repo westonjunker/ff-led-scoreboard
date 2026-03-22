@@ -61,6 +61,10 @@ def compose(league_images, total_w=64, total_h=64):
     draw = ImageDraw.Draw(canvas)
     draw.line([(31, 0), (31, total_h - 1)], fill=(30, 30, 30))   # vertical
     draw.line([(0, 31), (total_w - 1, 31)], fill=(30, 30, 30))   # horizontal
+    # Bottom panel (y=32-63) scans in reverse due to chain wiring —
+    # pre-rotate 180° so the hardware inversion cancels out.
+    bottom = canvas.crop((0, 32, total_w, total_h)).rotate(180)
+    canvas.paste(bottom, (0, 32))
     return canvas
 
 
